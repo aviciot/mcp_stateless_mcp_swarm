@@ -42,16 +42,20 @@ docker-compose up -d
 
 ```bash
 # Health check
-curl http://localhost:8000/healthz
+curl http://localhost:8100/healthz
 
 # Version info
-curl http://localhost:8000/version
+curl http://localhost:8100/version
 
-# List tools (MCP protocol)
-curl -X POST http://localhost:8000/ \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+# MCP endpoint (requires MCP client with SSE support)
+# The MCP protocol endpoint is at http://localhost:8100/mcp
+# Use an MCP client SDK to properly connect:
+# - Claude Desktop
+# - MCP Python SDK
+# - MCP TypeScript SDK
 ```
+
+**Note**: The MCP protocol uses Server-Sent Events (SSE) and requires proper session management. Direct curl requests won't work - use an MCP client SDK or configure Claude Desktop to connect.
 
 ## Project Structure
 
