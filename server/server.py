@@ -16,6 +16,7 @@ from starlette.responses import JSONResponse, PlainTextResponse
 import uvicorn
 
 from config import get_config
+from mcp_app import mcp
 
 # Initialize logging
 logging.basicConfig(
@@ -26,21 +27,6 @@ logger = logging.getLogger(__name__)
 
 # Load configuration
 config = get_config()
-
-# ========================================
-# IMPORT ALL MODULES FIRST
-# ========================================
-from utils.import_utils import import_submodules
-
-# Import all tools, resources, and prompts BEFORE creating HTTP app
-import_submodules('tools')
-import_submodules('resources')
-import_submodules('prompts')
-
-logger.info("All modules imported successfully")
-
-# NOW import mcp after tools are registered
-from mcp_app import mcp
 
 # ========================================
 # STARTUP BANNER
