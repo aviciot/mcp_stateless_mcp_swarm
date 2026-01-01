@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  template_mcp:
+    build: .
+    container_name: template_mcp
+    ports:
+      - "${MCP_PORT:-8100}:8000"
+    environment:
+      - MCP_PORT=8000
+      - AUTH_ENABLED=${AUTH_ENABLED:-false}
+      - AUTH_TOKEN=${AUTH_TOKEN:-}
+    volumes:
+      - ./server:/app:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

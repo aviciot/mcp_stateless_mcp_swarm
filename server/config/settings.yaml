@@ -1,0 +1,22 @@
+# Template MCP Configuration
+# ==========================
+
+# Server Configuration
+server:
+  version: "1.0.0"
+  host: "0.0.0.0"
+  port: 8000  # Override with MCP_PORT env var in .env
+
+# MCP Configuration
+mcp:
+  name: "template-mcp"
+  description: "Base template for MCP servers"
+
+# Security Configuration
+security:
+  authentication:
+    enabled: false  # Set AUTH_ENABLED=true in .env to enable
+    bearer_token: ""  # Set AUTH_TOKEN in .env
+
+# Add your custom configuration below
+# ==================================
