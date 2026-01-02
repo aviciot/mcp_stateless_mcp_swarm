@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 # Load configuration
 config = get_config()
 
+# Validate configuration (fail fast if misconfigured)
+from utils.config_validator import validate_config
+validate_config(config)
+
 # ========================================
 # AUTO-DISCOVERY CONFIGURATION
 # ========================================
@@ -168,6 +172,27 @@ if config.is_authentication_enabled():
     app.add_middleware(AuthenticationMiddleware)
     logger.info("Authentication middleware enabled")
 
+# Add request logging middleware
+from utils.request_logging import RequestLoggingMiddleware
+app.add_middleware(RequestLoggingMiddleware)
+logger.info("Request logging middleware enabled")
+
+
+# ========================================
+# HOSTNAME HEADER MIDDLEWARE
+# ========================================
+class HostnameHeaderMiddleware(BaseHTTPMiddleware):
+    """Add X-Served-By header to all responses for load balancing visibility"""
+    
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Served-By"] = socket.gethostname()
+        return response
+
+app.add_middleware(HostnameHeaderMiddleware)
+logger.info("Hostname header middleware enabled (X-Served-By)")
+
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -180,6 +205,7 @@ app.add_middleware(
 # ========================================
 # SIMPLE ENDPOINTS
 # ========================================
+import socket
 
 async def health_check(request):
     """Health check endpoint"""
@@ -187,12 +213,32 @@ async def health_check(request):
 
 
 async def version_info(request):
-    """Version information endpoint"""
+    """Version information endpoint - includes hostname for Swarm testing"""
     return JSONResponse({
         "name": config.get('mcp.name', 'template-mcp'),
         "version": config.get('server.version', '1.0.0'),
-        "status": "running"
+        "status": "running",
+        "hostname": socket.gethostname()  # Shows which container handled request
     })
+
+
+async def deep_health_check(request):
+    """
+    Deep health check - checks server status
+    
+    Returns 200 if healthy, 503 otherwise
+    """
+    health = {
+        "status": "healthy",
+        "hostname": socket.gethostname(),
+        "mode": "stateless" if os.getenv("STATELESS_HTTP", "true").lower() in ("1", "true", "yes", "on") else "stateful",
+        "checks": {
+            "server": "ok"
+        }
+    }
+    
+    status_code = 200 if health["status"] == "healthy" else 503
+    return JSONResponse(health, status_code=status_code)
 
 
 # ========================================
@@ -200,6 +246,7 @@ async def version_info(request):
 # ========================================
 app.add_route("/healthz", health_check, methods=["GET"])
 app.add_route("/health", health_check, methods=["GET"])
+app.add_route("/health/deep", deep_health_check, methods=["GET"])
 app.add_route("/version", version_info, methods=["GET"])
 
 # ========================================

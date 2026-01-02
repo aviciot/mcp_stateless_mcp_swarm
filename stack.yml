@@ -1,0 +1,50 @@
+version: '3.8'
+
+# ===========================================
+# MCP SWARM POC - STATELESS MODE
+# ===========================================
+# This stack demonstrates horizontal scaling using
+# stateless_http=True mode. No Redis needed!
+#
+# Key: Each replica is independent, any can handle
+# any request. True round-robin load balancing.
+
+services:
+  # ===========================================
+  # MCP SERVERS - Stateless Replicas
+  # ===========================================
+  mcp:
+    image: template_mcp_swarm:latest
+    ports:
+      - "8150:8000"
+    environment:
+      - MCP_PORT=8000
+      - MCP_NAME=template-mcp-swarm
+      - AUTH_ENABLED=false
+      - AUTH_TOKEN=${AUTH_TOKEN:-}
+      - STATELESS_HTTP=true  # KEY: Enables horizontal scaling
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+networks:
+  default:
+    driver: overlay
